@@ -1,0 +1,30 @@
+﻿name: CI
+
+on:
+  push:
+    branches: [ sambou_marietou_pressing ]
+  pull_request:
+    branches: [ sambou_marietou_pressing ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build the application
+        run: npm run build
