@@ -1,59 +1,123 @@
-# PressingFrontend
+# Pressing LIC — Frontend (Angular)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.4.
+SPA Angular consommant l'API Laravel `pressing-api` : catalogue de services,
+dépôt et suivi de commandes côté client, gestion des tickets/services/statistiques
+côté gestionnaire.
 
-## Development server
+## Stack technique
 
-To start a local development server, run:
+- **Framework** : Angular 22 (composants standalone, signals, Reactive Forms)
+- **Authentification** : token Bearer (Laravel Sanctum), intercepteur HTTP dédié
+- **Statistiques** : Chart.js
+- **Tests** : Vitest (nouveau test runner Angular)
+- **Style** : CSS fait main, pas de framework externe
+
+## Prérequis
+
+- Node.js 22+
+- npm
+- L'API Laravel `pressing-api` doit tourner en parallèle (voir son propre README)
+
+## Installation
 
 ```bash
+git clone <url-du-depot>
+cd pressing-frontend
+
+npm install
+```
+
+L'URL de l'API est configurée dans `src/environments/environment.development.ts` :
+
+```ts
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:8000/api',
+};
+```
+
+Adapte le port si ton API Laravel tourne ailleurs qu'en local sur `8000`.
+
+## Lancer le projet
+
+Le frontend seul ne suffit pas : il faut aussi l'API Laravel active (et son worker
+de file d'attente si `QUEUE_CONNECTION=database` côté API, voir son README).
+
+```bash
+# Terminal 1 — API Laravel (voir pressing-api/README.md)
+php artisan serve
+
+# Terminal 2 — worker de file d'attente (emails), si besoin
+php artisan queue:work
+
+# Terminal 3 — frontend Angular
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+L'application est alors accessible sur `http://localhost:4200`.
 
-## Code scaffolding
+## Comptes de test
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Identiques à ceux créés par le seeder Laravel (voir `pressing-api/README.md`) :
 
-```bash
-ng generate component component-name
-```
+| Rôle | Email | Mot de passe |
+|---|---|---|
+| Gestionnaire | `gestionnaire@pressing-lic.com` | `password` |
+| Client | `client1@pressing-lic.com` | `password` |
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+## Vérifier que tout compile
 
 ```bash
-ng build
+npx tsc --noEmit -p tsconfig.app.json
+npx tsc --noEmit -p tsconfig.spec.json
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Tests
 
 ```bash
-ng test
+npm test
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Build de production
 
 ```bash
-ng e2e
+npm run build
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Les artefacts sont générés dans `dist/`.
 
-## Additional Resources
+## Structure du projet
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```
+src/app/
+├── core/
+│   ├── guards/          # authGuard, roleGuard
+│   ├── interceptors/    # authInterceptor (ajoute le token Bearer)
+│   ├── models/          # Interfaces alignées sur les réponses de l'API
+│   └── services/        # Auth, ServiceApi, TicketApi, PaymentApi, StatsApi
+├── shared/
+│   └── navbar/          # Barre de navigation partagée (adapte les liens au rôle connecté)
+└── features/
+    ├── auth/             # Login, Register
+    ├── catalogue/         # Catalogue des services (client)
+    ├── tickets/
+    │   ├── depot-commande/   # Dépôt d'une commande (client)
+    │   ├── detail-ticket/    # Détail + actions (client et gestionnaire)
+    │   ├── mes-commandes/    # Historique des commandes (client)
+    │   └── liste-tickets/    # Liste de tous les tickets (gestionnaire)
+    ├── services-admin/    # CRUD des services (gestionnaire)
+    └── dashboard/          # Statistiques et graphiques Chart.js (gestionnaire)
+```
+
+## Routes principales
+
+| Route | Accès | Description |
+|---|---|---|
+| `/login`, `/register` | Public | Authentification |
+| `/catalogue` | Authentifié | Catalogue des services |
+| `/deposer-commande` | Client | Dépôt d'une commande |
+| `/mes-commandes` | Client | Historique des commandes |
+| `/tickets/:id` | Authentifié | Détail d'un ticket |
+| `/gestion/tickets` | Gestionnaire | Liste et traitement des tickets |
+| `/gestion/services` | Gestionnaire | CRUD des services |
+| `/gestion/dashboard` | Gestionnaire | Statistiques |
